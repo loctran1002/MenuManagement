@@ -1,0 +1,24 @@
+.container {
+    width: 50rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.hover-span {
+    padding: 0;
+    margin: 2rem;
+}
+
+.button-container {
+    display: none;
+}
+
+.button-container .btn {
+    margin: 0 10px;
+}
+
+.hover-span:hover .button-container {
+    display: inline-block;
+    margin-left: 1rem;
+}
