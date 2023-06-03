@@ -5,20 +5,83 @@
     justify-content: center;
 }
 
+.empty-list {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 55vh;
+}
+
+    .empty-list img {
+        scale: 0.23;
+    }
+
 .hover-span {
     padding: 0;
-    margin: 2rem;
+    margin: 1rem 2rem;
+    font-size: 23px;
+    font-weight: 400;
+    border: unset;
+    background-color: unset;
 }
 
 .button-container {
     display: none;
 }
 
-.button-container .btn {
-    margin: 0 10px;
-}
+    .button-container .btn {
+        margin: 0 10px;
+    }
 
 .hover-span:hover .button-container {
     display: inline-block;
     margin-left: 1rem;
+}
+
+.add-new {
+    color: darkcyan;
+    font-weight: 600;
+    font-size: larger;
+}
+
+/*==========Model add new menu=============*/
+.model-add {
+    margin-top: 6rem;
+    color: #1f6ebd;
+    width: 350px;
+}
+
+.model-add .modal-content {
+    padding: 20px;
+    border-radius: 5px;
+    border: none;
+}
+
+.model-add .modal-header {
+    border-bottom: none;
+    position: relative;
+    justify-content: center;
+}
+
+.model-add .form-control:focus {
+    border-color: #70c5c0;
+}
+
+.model-add .form-control {
+    min-height: 40px;
+    border-radius: 3px;
+}
+
+.model-add .close {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    border: unset;
+    font-size: 24px;
+    background-color: unset;
+}
+
+.trigger-btn {
+    display: inline-block;
+    margin: 100px auto;
 }

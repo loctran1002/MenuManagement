@@ -14,25 +14,46 @@ namespace ManageMenu.Services
             _context = menuDBContext;
         }
 
-        public async Task<bool> CreateMenuAsync(Guid root, string content)
+        public async Task<MenuViewModel> CreateMenuAsync(MenuViewModel menuViewModel)
         {
             var checkLevel = await (from m in _context.Menu
-                                    where m.Id == root
+                                    where m.Id == menuViewModel.Id
                                     select m).FirstOrDefaultAsync();
             if (checkLevel == null)
             {
-                return false;
+                var newChild = new Menu()
+                {
+                    Id = menuViewModel.Id == Guid.Empty ? Guid.NewGuid() : menuViewModel.Id,
+                    Level = 1,
+                    Content = menuViewModel.Content == null ? "Menu" : menuViewModel.Content,
+                    RootId = null,
+                };
+
+                var res = await _context.Menu.AddAsync(newChild);
+                await _context.SaveChangesAsync();
+
+                if (res.State == EntityState.Added || res.State == EntityState.Unchanged)
+                {
+                    return new MenuViewModel()
+                    {
+                        Id = newChild.Id,
+                        Content = newChild.Content,
+                        Children = null,
+                    };
+                }
+
+                return null;
             }
 
             var numChildren = await (from m in _context.Menu
-                                     where m.RootId == root
+                                     where m.RootId == menuViewModel.Id
                                      select m).ToListAsync();
 
             var newLevel = new Menu()
             {
-                Id = root,
+                Id = Guid.NewGuid(),
                 Level = checkLevel.Level + 1,
-                Content = content,
+                Content = checkLevel.Content + " - " + (numChildren.Count() + 1).ToString(),
                 Root = null,
                 RootId = checkLevel.Id,
             };
@@ -40,42 +61,90 @@ namespace ManageMenu.Services
             var result = await _context.Menu.AddAsync(newLevel);
             await _context.SaveChangesAsync();
 
-            if (result.State == EntityState.Added)
+            if (result.State == EntityState.Added || result.State == EntityState.Unchanged)
+            {
+                return new MenuViewModel()
+                {
+                    Id = newLevel.Id,
+                    Content = newLevel.Content,
+                    Children = null,
+                };
+            }
+
+            return null;
+        }
+
+        public async Task<bool> DeleteMenuAsync(Guid id)
+        {
+            var item = await (from m in _context.Menu
+                                    where m.Id == id
+                                    select m).FirstOrDefaultAsync();
+            if (item == null)
+            {
+                return false;
+            }
+
+            var res = _context.Menu.Remove(item);
+            await _context.SaveChangesAsync();
+
+            if (res.State == EntityState.Deleted || res.State == EntityState.Detached)
             {
                 return true;
             }
+
             return false;
         }
 
-        public Task<bool> DeleteMenuAsync(Guid id)
+        public async Task<bool> EditMenuAsync(MenuViewModel menuViewModel)
         {
-            throw new NotImplementedException();
+            var item = await (from m in _context.Menu
+                              where m.Id == menuViewModel.Id
+                              select m).FirstOrDefaultAsync();
+            if (item == null)
+            {
+                return false;
+            }
+
+            item.Content = menuViewModel.Content;
+
+            var res = _context.Menu.Update(item);
+            await _context.SaveChangesAsync();
+
+            if (res.State == EntityState.Modified || res.State == EntityState.Unchanged)
+            {
+                return true;
+            }
+
+            return false;
         }
 
-        public Task<bool> EditMenuAsync(Guid root)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<List<MenuViewModel>?> ShowMenuAsync(Guid id)
+        public async Task<List<MenuViewModel>?> ShowMenuAsync(Guid? id)
         {
             var checkLevel = await (from m in _context.Menu
                                     where m.Id == id
                                     select m).FirstOrDefaultAsync();
             if (checkLevel == null)
             {
-                return null;
+                var rootLevel = await (from m in _context.Menu
+                                       where m.Level == 1
+                                       orderby m.Content ascending
+                                       select new MenuViewModel
+                                       {
+                                           Id = m.Id,
+                                           Content = m.Content,
+                                       }).ToListAsync();
+                return rootLevel;
             }
 
             var numChildren = await (from m in _context.Menu
                                      where m.RootId == id
+                                     orderby m.Content ascending
                                      select new MenuViewModel
                                      {
                                          Id = m.Id,
                                          Content = m.Content,
-                                         Children = null,
                                      }).ToListAsync();
-            
+
             return numChildren;
         }
     }

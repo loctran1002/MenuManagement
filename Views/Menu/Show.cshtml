@@ -1,41 +1,184 @@
-﻿@{
+﻿@using ManageMenu.Models
+@using System.Text.Json
+
+@model List<MenuViewModel>
+@{
     ViewData["Title"] = "Menu Page";
 }
 
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <link rel="stylesheet" href="~/css/menu.css" asp-append-version="true" />
-</head>
-
-<body>
-    <div class="container">
-        <div class="menu-container">
-            @for (var i = 1; i <= 3; i++)
+<div class="container">
+    <div class="menu-container">
+        @functions
+        {
+            public async Task ShowLevel(List<MenuViewModel>? list, int level)
             {
-                <h4 id="menu-@i" class="hover-span font-weight-bold">Menu @i<span class="button-container"></span></h4>
+                if (list == null)
+                    return;
+
+                string data = JsonSerializer.Serialize(@Model);
+                for (int i = 0; i < list.Count; i++)
+                {
+                    <form asp-controller="Menu" asp-action="show-details" method="post">
+                        <input type="hidden" name="dataListMenu" value="@data" />
+                        <input type="hidden" name="id" value="@list[i].Id" />
+                        <button class="hover-span font-weight-bold" style="margin-left: @(2*level)rem;">
+                            @list[i].Content
+                            @{
+                                if (@list[i].Children == null || @list[i].Children.Count == 0)
+                                {
+                                    <i class="fa-solid fa-angle-down fa-rotate-90"></i>
+                                }
+                                else
+                                {
+                                    <input type="hidden" name="shrink" value="true" />
+                                    <i class="fa-solid fa-angle-down"></i>
+                                }
+
+                                var content = @list[i].Content + " - ";
+                                if (@list[i].Children == null)
+                                {
+                                    content += "1";
+                                }
+                                else
+                                {
+                                    content += (@list[i].Children.Count + 1).ToString();
+                                }
+                                <span id="@list[i].Id" data="@content" class="button-container"></span>
+                            }
+                        </button>
+                    </form>
+                    @if (list[i].Children != null)
+                    {
+                        await ShowLevel(list[i].Children, level + 1);
+                    }
+                }
             }
-        </div>
+        }
+
+        @if (@Model == null || @Model.Count == 0)
+        {
+            <div class="empty-list">
+                <img src="~/image/no-data.jpg" alt="Empty icon" class="icon-placeholder">
+            </div>
+        }
+        else
+        {
+            @for (var i = 0; i < Model.Count; i++)
+            {
+                string listJson = JsonSerializer.Serialize(@Model);
+
+                <form asp-controller="Menu" asp-action="show-details" method="post">
+                    <input type="hidden" name="dataListMenu" value="@listJson" />
+                    <input type="hidden" name="id" value="@Model[i].Id" />
+                    <button class="hover-span font-weight-bold">
+                        @Model[i].Content
+                        @{
+                            if (@Model[i].Children == null || @Model[i].Children.Count == 0)
+                            {
+                                <i class="fa-solid fa-angle-down fa-rotate-90"></i>
+                            }
+                            else
+                            {
+                                <input type="hidden" name="shrink" value="true" />
+                                <i class="fa-solid fa-angle-down"></i>
+                            }
+
+                            var content = @Model[i].Content + " - ";
+                            if (@Model[i].Children == null)
+                            {
+                                content += "1";
+                            }
+                            else
+                            {
+                                content += (@Model[i].Children.Count + 1).ToString();
+                            }
+                            <span id="@Model[i].Id" data="@content" class="button-container"></span>
+                        }
+                    </button>
+                </form>
+
+                @if (@Model[i].Children != null)
+                {
+                    await ShowLevel(@Model[i].Children, 2);
+                }
+            }
+        }
     </div>
 
-    <div class="d-none">
-        <div class="button-content">
-            <form action="/Create" method="post">
-                <button type="submit" class="btn btn-success">Create</button>
-                <button type="submit" class="btn btn-primary">Edit</button>
-                <button type="submit" class="btn btn-danger">Delete</button>
-            </form>
+    <div class="d-flex justify-content-center">
+        <a href="#add-modal" class="trigger-btn btn btn-info mt-4 p-2 ps-5 pe-5 add-new" data-toggle="modal">
+            Add new
+        </a>
+    </div>
+</div>
+
+<div id="add-modal" class="modal fade">
+    <div class="modal-dialog model-add">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add new item</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form asp-controller="Menu" asp-action="create" method="post">
+                    <input type="hidden" name="dataListMenu" value="@JsonSerializer.Serialize(@Model)" />
+                    <input type="hidden" name="menuViewModel.Id" value="@Guid.Empty" />
+                    <div class="form-group mt-4 mb-3">
+                        <input type="text" class="form-control" name="menuViewModel.Content" value="Menu @(Model.Count() + 1)" />
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-info btn-block w-100">Submit</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
+</div>
 
-    <script src="~/js/menu.js" asp-append-version="true"></script>
+<div id="edit-modal" class="modal fade">
+    <div class="modal-dialog model-add">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit item</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form asp-controller="Menu" asp-action="edit" method="post">
+                    <input type="hidden" name="dataListMenu" value="@JsonSerializer.Serialize(@Model)" />
+                    <input class="id-root-edit-modal" type="hidden" name="menuViewModel.Id" />
+                    <div class="form-group mt-2 mb-4">
+                        <input type="text" class="form-control content-edit-modal" name="menuViewModel.Content" />
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-info btn-block w-100">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
-</body>
+<div class="d-none">
+    <div class="button-content d-flex">
+        <form asp-controller="Menu" asp-action="create" method="post">
+            <input type="hidden" name="dataListMenu" value="@JsonSerializer.Serialize(@Model)" />
+            <input class="id-root-create" type="hidden" name="menuViewModel.Id" />
+            <input type="hidden" class="content-create" name="menuViewModel.Content" />
+            <button type="submit" class="btn btn-success">Create</button>
+        </form>
+        <div class="edit">
+            <a href="#edit-modal" data="" class="btn btn-primary id-root-edit content-edit" data-toggle="modal" onclick="bindingValue(event)">
+                Edit
+            </a>
+        </div>
+        <form asp-controller="Menu" asp-action="delete" method="post">
+            <input type="hidden" name="dataListMenu" value="@JsonSerializer.Serialize(@Model)" />
+            <input class="id-root-delete" type="hidden" name="id" />
+            <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+    </div>
+</div>
 
-</html>
+<script src="~/js/menu.js" asp-append-version="true"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.min.js"></script>

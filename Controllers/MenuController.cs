@@ -1,10 +1,13 @@
 ﻿using ManageMenu.Models;
 using ManageMenu.Services;
+using MenuManagement.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace ManageMenu.Controllers
 {
+    [Route("Menu")]
     public class MenuController : Controller
     {
         private readonly IMenuService _menuService;
@@ -14,79 +17,122 @@ namespace ManageMenu.Controllers
             _menuService = menuService;
         }
 
-        [HttpGet("/Show")]
-        public IActionResult Show()
+        [HttpGet("show")]
+        public async Task<IActionResult> Show()
         {
-            return View(new MenuViewModel());
+            return View(new List<MenuViewModel>());
         }
 
-        // GET: MenuController/Details/5
-        public IActionResult Details(int id)
+        [HttpPost("show")]
+        public async Task<IActionResult> Show([FromQuery] Guid? id)
         {
-            return View();
-        }
-
-        [HttpPost("/Create")]
-        public async Task<IActionResult> Create(MenuViewModel menuViewModel)
-        {
-            menuViewModel.Id = new Guid();
-            menuViewModel.Content = "Menu 1";
             if (!ModelState.IsValid)
             {
-                return View(menuViewModel);
+                return View(new List<MenuViewModel>());
             }
 
-            var create = await _menuService.CreateMenuAsync(menuViewModel.Id, menuViewModel.Content);
+            var listMenu = await _menuService.ShowMenuAsync(id);
+            if (listMenu == null)
+                listMenu = new List<MenuViewModel>();
+            return View(listMenu);
+        }
 
-            if (!create)
+        [HttpPost("show-details")]
+        public async Task<IActionResult> ShowDetail([FromForm] string? dataListMenu, [FromForm] Guid id, bool shrink = false)
+        {
+            if (dataListMenu == null)
+                return View("show", new List<MenuViewModel>());
+
+            List<MenuViewModel>? listMenu = JsonSerializer.Deserialize<List<MenuViewModel>>(dataListMenu);
+            if (listMenu == null)
+                listMenu = new List<MenuViewModel>();
+
+            if (shrink)
+            {
+                Helpers.ShrinkList(ref listMenu, id);
+                return View("show", listMenu);
+            }
+
+            var children = await _menuService.ShowMenuAsync(id);
+            if (children != null || children.Count != 0)
+                Helpers.AppendChild(ref listMenu, id, children);
+            return View("show", listMenu);
+        }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> CreateMenuAsync([FromForm] string? dataListMenu, [FromForm] MenuViewModel menuViewModel)
+        {
+            if (dataListMenu == null)
+                return View(new List<MenuViewModel>());
+
+            List<MenuViewModel> listMenu = JsonSerializer.Deserialize<List<MenuViewModel>>(dataListMenu);
+            var create = await _menuService.CreateMenuAsync(menuViewModel);
+
+            if (create == null)
             {
                 Console.WriteLine("Tạo không thành công");
-                return View(menuViewModel);
+                return View("show", listMenu);
             }
 
-            return RedirectToAction("Show", "Menu");
+            if (listMenu == null)
+                listMenu = new List<MenuViewModel>();
+
+            if (menuViewModel.Id == Guid.Empty)
+            {
+                listMenu.Add(create);
+            }
+            else
+            {
+                Helpers.AppendChild(ref listMenu, menuViewModel.Id, create);
+            }
+
+            return View("show", listMenu);
         }
 
-        // GET: MenuController/Edit/5
-        public IActionResult Edit(int id)
+        [HttpPost("edit")]
+        public async Task<IActionResult> Edit([FromForm] string? dataListMenu, [FromForm] MenuViewModel menuViewModel)
         {
-            return View();
+            if (dataListMenu == null)
+                return View("show", new List<MenuViewModel>());
+
+            List<MenuViewModel> listMenu = JsonSerializer.Deserialize<List<MenuViewModel>>(dataListMenu);
+            var edit = await _menuService.EditMenuAsync(menuViewModel);
+
+            if (listMenu == null)
+                listMenu = new List<MenuViewModel>();
+
+            if (!edit)
+            {
+                Console.WriteLine("Chỉnh sửa không thành công");
+                return View("show", listMenu);
+            }
+
+            Helpers.EditContent(ref listMenu, menuViewModel);
+
+            return View("show", listMenu);
         }
 
-        // POST: MenuController/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, IFormCollection collection)
+        [HttpPost("delete")]
+        public async Task<IActionResult> DeleteAsync([FromForm] string? dataListMenu, [FromForm] Guid id)
         {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
+            if (dataListMenu == null)
+                return View("show", new List<MenuViewModel>());
 
-        // GET: MenuController/Delete/5
-        public IActionResult Delete(int id)
-        {
-            return View();
-        }
+            List<MenuViewModel> listMenu = JsonSerializer.Deserialize<List<MenuViewModel>>(dataListMenu);
+            var delete = await _menuService.DeleteMenuAsync(id);
 
-        // POST: MenuController/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Delete(int id, IFormCollection collection)
-        {
-            try
+            if (listMenu == null)
+                listMenu = new List<MenuViewModel>();
+
+            if (!delete)
             {
-                return RedirectToAction(nameof(Index));
+                Console.WriteLine("Xóa không thành công");
+                return View("show", listMenu);
             }
-            catch
-            {
-                return View();
-            }
+
+            Helpers.RemoveItem(ref listMenu, id);
+
+            return View("show", listMenu);
         }
     }
 }

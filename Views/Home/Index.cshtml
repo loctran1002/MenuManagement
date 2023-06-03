@@ -3,5 +3,8 @@
 }
 
 <div class="d-flex justify-content-center align-items-center">
-  <a class="btn btn-primary pe-5 ps-5 mt-5" href="/Show">Show</a>
+    <form asp-controller="Menu" asp-action="show" method="post">
+        <input type="hidden" name="id" value="@Guid.Empty" />
+        <button type="submit" class="btn btn-primary pe-5 ps-5 mt-5">Show</button>
+    </form>
 </div>

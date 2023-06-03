@@ -18,7 +18,7 @@ namespace ManageMenu.Configuration
                 .WithMany()
                 .HasForeignKey(m => m.RootId)
                 .IsRequired(false)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -8,7 +8,10 @@
 
   <ItemGroup>
     <Folder Include="DBContext\Migrations\" />
-    <Folder Include="Utils\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\image\icons8-empty-100.jpg" />
   </ItemGroup>
 
   <ItemGroup>

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MenuManagement.DBContext.Migrations
 {
     [DbContext(typeof(MenuDBContext))]
-    [Migration("20230601183556_Init")]
+    [Migration("20230603061627_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -50,7 +50,7 @@ namespace MenuManagement.DBContext.Migrations
                     b.HasOne("ManageMenu.Entities.Menu", "Root")
                         .WithMany()
                         .HasForeignKey("RootId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Root");
                 });

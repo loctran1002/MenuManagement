@@ -32,7 +32,7 @@ namespace MenuManagement.DBContext.Migrations
                         column: x => x.RootId,
                         principalTable: "Menu",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 

@@ -47,7 +47,7 @@ namespace MenuManagement.DBContext.Migrations
                     b.HasOne("ManageMenu.Entities.Menu", "Root")
                         .WithMany()
                         .HasForeignKey("RootId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Root");
                 });
